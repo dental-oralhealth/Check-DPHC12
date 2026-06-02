@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>ตรวจสอบการลงทะเบียน | DPHC12</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #3a5fc1;
+      --primary2: #5044a8;
+      --accent: #7c3aed;
+      --green: #00c853;
+      --green-dark: #009624;
+      --red: #ff5252;
+      --white: #ffffff;
+      --card-bg: rgba(255,255,255,0.97);
+      --text: #1e1e2e;
+      --text-muted: #5a5a7a;
+      --radius: 18px;
+      --radius-sm: 12px;
+      --shadow: 0 8px 32px rgba(60,40,120,0.18);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Prompt', sans-serif;
+      background: linear-gradient(145deg, #2a4db5 0%, #4a3fa0 45%, #6a2f90 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px 40px;
+    }
+
+    /* ---- HEADER ---- */
+    .header {
+      width: 100%;
+      max-width: 660px;
+      text-align: center;
+      color: white;
+      padding: 28px 24px 24px;
+      background: rgba(255,255,255,0.10);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      animation: fadeDown 0.5s ease both;
+    }
+
+    .header .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      padding: 4px 14px;
+      margin-bottom: 14px;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .header h1 {
+      font-size: clamp(16px, 4vw, 20px);
+      font-weight: 600;
+      line-height: 1.5;
+      margin-bottom: 4px;
+    }
+
+    .header h2 {
+      font-size: clamp(13px, 3.5vw, 16px);
+      font-weight: 500;
+      opacity: 0.85;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .info-chip {
+      background: rgba(255,255,255,0.15);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 12.5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .info-chip .icon { font-size: 14px; }
+
+    .note {
+      font-size: 12px;
+      opacity: 0.75;
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    /* ---- SEARCH BOX ---- */
+    .search-wrap {
+      width: 100%;
+      max-width: 660px;
+      animation: fadeDown 0.5s 0.1s ease both;
+    }
+
+    .search-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .search-card input {
+      flex: 1;
+      border: 2px solid #e0e0f0;
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-size: 16px;
+      font-family: 'Prompt', sans-serif;
+      outline: none;
+      color: var(--text);
+      transition: border-color 0.2s;
+      background: #f7f7fd;
+    }
+
+    .search-card input::placeholder { color: #aaa; font-size: 14px; }
+    .search-card input:focus { border-color: var(--primary); background: white; }
+
+    .btn-search {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 14px 22px;
+      font-size: 15px;
+      font-family: 'Prompt', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 4px 14px rgba(90,60,180,0.3);
+    }
+
+    .btn-search:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-search:active { transform: translateY(0); }
+    .btn-search:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ---- SPINNER ---- */
+    .spinner-wrap {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      color: white;
+      padding: 24px 0;
+      font-size: 14px;
+    }
+
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    /* ---- RESULT ---- */
+    .result-wrap {
+      width: 100%;
+      max-width: 660px;
+      margin-top: 14px;
+    }
+
+    .error-msg {
+      text-align: center;
+      color: white;
+      background: rgba(255,80,80,0.25);
+      border: 1px solid rgba(255,100,100,0.35);
+      border-radius: var(--radius-sm);
+      padding: 14px 20px;
+      font-size: 14px;
+      backdrop-filter: blur(8px);
+    }
+
+    /* ---- CARD ---- */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      animation: slideUp 0.3s ease both;
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      padding: 14px 20px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-header .avatar {
+      width: 40px; height: 40px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+
+    .card-header .name-block { flex: 1; min-width: 0; }
+    .card-header .person-name {
+      font-size: 16px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .card-header .person-status {
+      font-size: 12px; opacity: 0.8; margin-top: 2px;
+    }
+
+    .card-body { padding: 16px 20px; }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 2px; }
+    .field.full { grid-column: 1 / -1; }
+
+    .field-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .field-value {
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 400;
+      line-height: 1.4;
+    }
+
+    .field-value.empty { color: #bbb; font-style: italic; font-size: 13px; }
+
+    .divider {
+      height: 1px;
+      background: #f0f0f8;
+      margin: 14px 0;
+    }
+
+    /* confirm section */
+    .confirm-section { padding: 0 20px 18px; }
+
+    .already-confirmed {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #e8f5e9;
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      color: var(--green-dark);
+      font-size: 13px;
+    }
+
+    .already-confirmed .check-icon { font-size: 20px; }
+
+    .btn-confirm {
+      width: 100%;
+      background: linear-gradient(135deg, #00c853, #00897b);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      font-size: 15px;
+      font-family: 'Prompt', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 4px 14px rgba(0,180,100,0.3);
+    }
+
+    .btn-confirm:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-confirm:active { transform: translateY(0); }
+    .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ---- MODAL ---- */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .modal-box {
+      background: white;
+      border-radius: 20px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+      overflow: hidden;
+      animation: popIn 0.25s ease both;
+    }
+
+    .modal-top {
+      padding: 28px 24px 16px;
+    }
+
+    .modal-icon { font-size: 44px; margin-bottom: 12px; }
+    .modal-title { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+    .modal-msg { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+
+    .modal-footer {
+      padding: 16px 24px;
+      background: #f7f7fd;
+      border-top: 1px solid #eee;
+    }
+
+    .btn-modal-close {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 12px 32px;
+      font-size: 15px;
+      font-family: 'Prompt', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    /* ---- FOOTER ---- */
+    .footer {
+      margin-top: 28px;
+      color: rgba(255,255,255,0.45);
+      font-size: 11px;
+      text-align: center;
+    }
+
+    /* ---- ANIMATIONS ---- */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.88); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ---- MOBILE ---- */
+    @media (max-width: 480px) {
+      .search-card { flex-direction: column; }
+      .field-grid { grid-template-columns: 1fr; }
+      .card-header { padding: 12px 16px; }
+      .card-body { padding: 14px 16px; }
+      .confirm-section { padding: 0 16px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="badge">ระบบตรวจสอบการลงทะเบียน</div>
+  <h1>ประชุมวิชาการทันตสาธารณสุขแห่งชาติครั้งที่ 12</h1>
+  <h2>24 Hours of Oral Health: Wellness from AM to PM</h2>
+  <div class="info-row">
+    <div class="info-chip"><span class="icon">📅</span> 6 – 8 กรกฎาคม 2569</div>
+    <div class="info-chip"><span class="icon">📍</span> โรงแรมรามาการ์เด้นส์ กรุงเทพฯ</div>
+  </div>
+  <div class="note">กรณีพักเดี่ยว สำรองห้องพักด้วยตนเอง ติดต่อสอบถาม โทรศัพท์ 02 558 7888</div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-wrap">
+  <div class="search-card">
+    <input
+      type="tel"
+      id="phone"
+      placeholder="กรอกเบอร์โทรศัพท์ที่ใช้ลงทะเบียน"
+      autocomplete="off"
+      inputmode="numeric"
+      onkeydown="handleEnter(event)"
+    >
+    <button class="btn-search" id="searchBtn" onclick="searchUser()">🔍 ค้นหา</button>
+  </div>
+</div>
+
+<!-- SPINNER -->
+<div class="spinner-wrap" id="spinner">
+  <div class="spinner"></div>
+  <span>กำลังค้นหาข้อมูล...</span>
+</div>
+
+<!-- RESULT -->
+<div class="result-wrap" id="result"></div>
+
+<!-- FOOTER -->
+<div class="footer">สำนักทันตสาธารณสุข กรมอนามัย กระทรวงสาธารณสุข</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="handleModalClick(event)">
+  <div class="modal-box" id="modalBox">
+    <div class="modal-top">
+      <div class="modal-icon" id="modalIcon">⚠️</div>
+      <div class="modal-title" id="modalTitle">แจ้งเตือน</div>
+      <div class="modal-msg" id="modalMsg"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-close" onclick="closeModal()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ==========================================
+  //  CONFIG — เปลี่ยน URL ตรงนี้เมื่อ deploy ใหม่
+  // ==========================================
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzoBYcQfIhmSp15nzHO7j0LOh5WAa0w4kEoPraF1cQIkyedZb8S0XCQSYlkORvZHJaB/exec';
+
+  // ==========================================
+
+  let localCache = {};
+
+  window.onload = () => {
+    document.getElementById('phone').focus();
+  };
+
+  function handleEnter(e) {
+    if (e.key === 'Enter') searchUser();
+  }
+
+  function setLoading(on) {
+    document.getElementById('spinner').style.display = on ? 'flex' : 'none';
+    document.getElementById('searchBtn').disabled = on;
+  }
+
+  // ---- SEARCH ----
+  async function searchUser() {
+    const input = document.getElementById('phone');
+    const phone = input.value.trim();
+
+    if (phone.length < 3) {
+      showModal('⚠️', 'กรุณากรอกข้อมูล', 'กรุณากรอกเบอร์โทรอย่างน้อย 3 ตัวเลข');
+      return;
+    }
+
+    document.getElementById('result').innerHTML = '';
+    setLoading(true);
+
+    if (localCache[phone]) {
+      renderResults(localCache[phone]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}?action=search&phone=${encodeURIComponent(phone)}`);
+      const data = await res.json();
+      localCache[phone] = data;
+      renderResults(data);
+    } catch (err) {
+      document.getElementById('result').innerHTML =
+        `<div class="error-msg">⚠️ ไม่สามารถติดต่อฐานข้อมูลได้ กรุณาลองใหม่อีกครั้ง</div>`;
+    } finally {
+      setLoading(false);
+      input.focus();
+    }
+  }
+
+  // ---- RENDER ----
+  function renderResults(data) {
+    const wrap = document.getElementById('result');
+    wrap.innerHTML = '';
+
+    if (!data || data.length === 0) {
+      showModal('🔍', 'ไม่พบข้อมูล', 'ไม่พบข้อมูลของท่าน หากท่านลงทะเบียนแล้วกรุณาติดต่อ 02 590 4473');
+      return;
+    }
+
+    data.forEach(user => {
+      const isConfirmed = !!user.confirmTime;
+      const nameFull = `${user.pname || ''} ${user.fullName || ''}`.trim();
+
+      const confirmHtml = isConfirmed
+        ? `<div class="already-confirmed">
+            <span class="check-icon">✅</span>
+            <div>
+              <strong>ยืนยันแล้ว</strong><br>
+              <span style="font-size:12px;opacity:0.8">${user.confirmTime}</span>
+            </div>
+          </div>`
+        : `<button class="btn-confirm" onclick="confirmUser('${user.phone}', this)">
+            ✅ ยืนยันการเข้าร่วม (Confirm)
+          </button>`;
+
+      const val = (v) => v ? `<span class="field-value">${v}</span>` : `<span class="field-value empty">-</span>`;
+
+      wrap.innerHTML += `
+        <div class="card">
+          <div class="card-header">
+            <div class="avatar">👤</div>
+            <div class="name-block">
+              <div class="person-name">${nameFull}</div>
+              <div class="person-status">${user.status || ''}</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="field-grid">
+              <div class="field">
+                <span class="field-label">ตำแหน่ง</span>
+                ${val(user.position)}
+              </div>
+              <div class="field">
+                <span class="field-label">ระดับ</span>
+                ${val(user.level)}
+              </div>
+              <div class="field full">
+                <span class="field-label">หน่วยงาน</span>
+                ${val(user.organization)}
+              </div>
+              <div class="field">
+                <span class="field-label">จังหวัด</span>
+                ${val(user.province)}
+              </div>
+              <div class="field">
+                <span class="field-label">โทรศัพท์</span>
+                ${val(user.phone)}
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="field-grid">
+              <div class="field">
+                <span class="field-label">สถานะพัก</span>
+                ${val(user.status2)}
+              </div>
+              <div class="field">
+                <span class="field-label">ห้องพัก</span>
+                ${val(user.room_inn)}
+              </div>
+              <div class="field full">
+                <span class="field-label">วันเข้า-ออก</span>
+                ${val(user.check_in)}
+              </div>
+              <div class="field">
+                <span class="field-label">เข้าร่วมประชุม</span>
+                ${val(user.join_meet)}
+              </div>
+              <div class="field">
+                <span class="field-label">อาหาร</span>
+                ${val(user.food)}
+              </div>
+            </div>
+          </div>
+          <div class="confirm-section">${confirmHtml}</div>
+        </div>
+      `;
+    });
+  }
+
+  // ---- CONFIRM ----
+  async function confirmUser(phone, btn) {
+    if (btn) btn.disabled = true;
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}?action=confirm&phone=${encodeURIComponent(phone)}`);
+      const data = await res.json();
+
+      if (data.error) {
+        showModal('⚠️', 'ไม่สามารถยืนยันได้', data.error + (data.confirmTime ? `\nเวลา: ${data.confirmTime}` : ''));
+        if (btn) btn.disabled = false;
+      } else {
+        delete localCache[document.getElementById('phone').value.trim()];
+        showModal('🎉', 'ยืนยันสำเร็จ!', `${data.fullName}\nเวลา: ${data.time}`);
+        setTimeout(() => { searchUser(); }, 1200);
+      }
+    } catch {
+      showModal('❌', 'เกิดข้อผิดพลาด', 'ไม่สามารถติดต่อฐานข้อมูลได้ กรุณาลองใหม่');
+      if (btn) btn.disabled = false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ---- MODAL ----
+  function showModal(icon, title, msg) {
+    document.getElementById('modalIcon').textContent = icon;
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMsg').innerHTML = msg.replace(/\n/g, '<br>');
+    document.getElementById('modal').style.display = 'flex';
+  }
+
+  function closeModal() {
+    document.getElementById('modal').style.display = 'none';
+  }
+
+  function handleModalClick(e) {
+    if (e.target.id === 'modal') closeModal();
+  }
+</script>
+</body>
+</html>
