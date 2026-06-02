@@ -457,6 +457,7 @@
   // ==========================================
 
   let localCache = {};
+  let jsonpCounter = 0;
 
   window.onload = () => {
     document.getElementById('phone').focus();
@@ -469,6 +470,41 @@
   function setLoading(on) {
     document.getElementById('spinner').style.display = on ? 'flex' : 'none';
     document.getElementById('searchBtn').disabled = on;
+  }
+
+  // ---- JSONP helper ----
+  // Google Apps Script รองรับ ?callback= โดย ContentService จะ wrap JSON ด้วยชื่อ callback
+  // วิธีนี้ไม่มีปัญหา CORS เพราะใช้ <script> tag แทน fetch
+  function jsonp(url, params) {
+    return new Promise((resolve, reject) => {
+      const cbName = '__jsonp_cb_' + (++jsonpCounter);
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error('timeout'));
+      }, 15000);
+
+      window[cbName] = function(data) {
+        cleanup();
+        resolve(data);
+      };
+
+      function cleanup() {
+        clearTimeout(timeout);
+        delete window[cbName];
+        const el = document.getElementById(cbName);
+        if (el) el.remove();
+      }
+
+      const qs = Object.entries({ ...params, callback: cbName })
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .join('&');
+
+      const script = document.createElement('script');
+      script.id  = cbName;
+      script.src = `${url}?${qs}`;
+      script.onerror = () => { cleanup(); reject(new Error('script error')); };
+      document.head.appendChild(script);
+    });
   }
 
   // ---- SEARCH ----
@@ -487,12 +523,12 @@
     if (localCache[phone]) {
       renderResults(localCache[phone]);
       setLoading(false);
+      input.focus();
       return;
     }
 
     try {
-      const res = await fetch(`${API_URL}?action=search&phone=${encodeURIComponent(phone)}`);
-      const data = await res.json();
+      const data = await jsonp(API_URL, { action: 'search', phone });
       localCache[phone] = data;
       renderResults(data);
     } catch (err) {
@@ -600,8 +636,7 @@
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}?action=confirm&phone=${encodeURIComponent(phone)}`);
-      const data = await res.json();
+      const data = await jsonp(API_URL, { action: 'confirm', phone });
 
       if (data.error) {
         showModal('⚠️', 'ไม่สามารถยืนยันได้', data.error + (data.confirmTime ? `\nเวลา: ${data.confirmTime}` : ''));

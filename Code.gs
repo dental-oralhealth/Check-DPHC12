@@ -51,10 +51,17 @@ function doGet(e) {
     result = { error: 'Unknown action' };
   }
 
-  // ส่ง JSON กลับ พร้อม CORS header
+  // รองรับ JSONP (callback=xxx) เพื่อแก้ CORS จาก GitHub Pages
+  const callback = e.parameter.callback;
+  const json = JSON.stringify(result);
+  const output = callback ? `${callback}(${json})` : json;
+  const mime = callback
+    ? ContentService.MimeType.JAVASCRIPT
+    : ContentService.MimeType.JSON;
+
   return ContentService
-    .createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON);
+    .createTextOutput(output)
+    .setMimeType(mime);
 }
 
 
