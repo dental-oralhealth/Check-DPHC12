@@ -404,7 +404,7 @@
     <div class="info-chip"><span class="icon">📅</span> 6 – 8 กรกฎาคม 2569</div>
     <div class="info-chip"><span class="icon">📍</span> โรงแรมรามาการ์เด้นส์ กรุงเทพฯ</div>
   </div>
-  <div class="note">ผู้ที่ไม่ได้สังกัดกระทรวงสาธารณสุข หรือผู้ประสงค์พักเดี่ยว สำรองห้องพักด้วยตนเอง โทรศัพท์ 02 558 7888</div>
+  <div class="note">กรณีพักเดี่ยว สำรองห้องพักด้วยตนเอง ติดต่อสอบถาม โทรศัพท์ 02 558 7888</div>
 </div>
 
 <!-- SEARCH -->
@@ -472,21 +472,14 @@
     document.getElementById('searchBtn').disabled = on;
   }
 
-  // ---- JSONP helper ----
-  // Google Apps Script รองรับ ?callback= โดย ContentService จะ wrap JSON ด้วยชื่อ callback
-  // วิธีนี้ไม่มีปัญหา CORS เพราะใช้ <script> tag แทน fetch
+  // ---- API call helper ----
   function jsonp(url, params) {
     return new Promise((resolve, reject) => {
       const cbName = '__jsonp_cb_' + (++jsonpCounter);
       const timeout = setTimeout(() => {
         cleanup();
         reject(new Error('timeout'));
-      }, 15000);
-
-      window[cbName] = function(data) {
-        cleanup();
-        resolve(data);
-      };
+      }, 20000);
 
       function cleanup() {
         clearTimeout(timeout);
@@ -496,14 +489,27 @@
       }
 
       const qs = Object.entries({ ...params, callback: cbName })
-        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v))
         .join('&');
 
-      const script = document.createElement('script');
-      script.id  = cbName;
-      script.src = `${url}?${qs}`;
-      script.onerror = () => { cleanup(); reject(new Error('script error')); };
-      document.head.appendChild(script);
+      const finalUrl = url + '?' + qs;
+
+      // fetch แบบ follow redirect แล้ว parse text เอง (ใช้ได้ทั้ง PC และมือถือ)
+      fetch(finalUrl, { method: 'GET', redirect: 'follow' })
+        .then(function(res) { return res.text(); })
+        .then(function(text) {
+          clearTimeout(timeout);
+          delete window[cbName];
+          // text รูปแบบ: callbackName({...}) หรือ callbackName([...])
+          var brace = text.indexOf('(');
+          if (brace === -1) throw new Error('bad response');
+          var json = text.slice(brace + 1, text.lastIndexOf(')'));
+          resolve(JSON.parse(json));
+        })
+        .catch(function(err) {
+          cleanup();
+          reject(err);
+        });
     });
   }
 
